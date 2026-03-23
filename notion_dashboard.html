@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LearnOS — Course Completion Engine</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0f0f13;
+    --surface: #16161d;
+    --surface2: #1d1d27;
+    --border: #2a2a3a;
+    --accent: #4f6ef7;
+    --accent2: #7c3aed;
+    --accent3: #06b6d4;
+    --success: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --text: #e8e8f0;
+    --muted: #8888a8;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Sora', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    overflow-y: auto;
+    z-index: 100;
+  }
+
+  .sidebar-logo {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .sidebar-logo .brand {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+
+  .sidebar-logo .tagline {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .sidebar-section {
+    padding: 0 12px 12px;
+  }
+
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    padding: 0 8px;
+    margin-bottom: 6px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--muted);
+    transition: all .15s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(79,110,247,.15); color: var(--accent); }
+  .nav-item .icon { font-size: 14px; width: 18px; flex-shrink: 0; }
+
+  /* MAIN */
+  .main {
+    margin-left: 220px;
+    min-height: 100vh;
+  }
+
+  /* TOP BAR */
+  .topbar {
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 32px;
+    gap: 12px;
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .breadcrumb {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .breadcrumb span { color: var(--text); font-weight: 500; }
+
+  .topbar-pills {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+  }
+
+  .pill {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .02em;
+  }
+
+  .pill-blue { background: rgba(79,110,247,.2); color: #7b9ef7; border: 1px solid rgba(79,110,247,.3); }
+  .pill-purple { background: rgba(124,58,237,.2); color: #a78bfa; border: 1px solid rgba(124,58,237,.3); }
+  .pill-green { background: rgba(16,185,129,.2); color: #34d399; border: 1px solid rgba(16,185,129,.3); }
+  .pill-amber { background: rgba(245,158,11,.2); color: #fbbf24; border: 1px solid rgba(245,158,11,.3); }
+  .pill-red { background: rgba(239,68,68,.2); color: #f87171; border: 1px solid rgba(239,68,68,.3); }
+  .pill-cyan { background: rgba(6,182,212,.2); color: #22d3ee; border: 1px solid rgba(6,182,212,.3); }
+
+  /* PAGES */
+  .page { display: none; padding: 40px 48px; max-width: 1100px; }
+  .page.active { display: block; }
+
+  .page-header {
+    margin-bottom: 40px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    margin-bottom: 8px;
+  }
+
+  .page-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+    margin-bottom: 10px;
+  }
+
+  .page-subtitle {
+    font-size: 15px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .page-meta {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .meta-item {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  /* CALLOUT */
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: rgba(79,110,247,.08);
+    padding: 16px 20px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 28px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .callout.warn { border-color: var(--warn); background: rgba(245,158,11,.08); }
+  .callout.success { border-color: var(--success); background: rgba(16,185,129,.08); }
+
+  /* SECTION */
+  .section { margin-bottom: 40px; }
+  .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* GRID */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+
+  /* STAT CARD */
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .stat-change { font-size: 12px; color: var(--muted); }
+  .stat-change.up { color: var(--success); }
+  .stat-change.neutral { color: var(--accent); }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .card-title { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+  .card-body { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; margin-bottom: 24px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    background: var(--surface2);
+    color: var(--muted);
+    font-weight: 500;
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    color: var(--text);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  /* PERSONA CARD */
+  .persona-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+
+  .persona-avatar {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-bottom: 12px;
+  }
+
+  .persona-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .persona-role { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .persona-quote {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    border-left: 2px solid var(--border);
+    padding-left: 10px;
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+  .persona-pain { font-size: 12px; color: var(--text); }
+  .persona-pain strong { color: var(--accent); }
+
+  /* FEATURE CARD */
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .feature-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .feature-title { font-size: 15px; font-weight: 600; }
+
+  .feature-section { margin-top: 14px; }
+  .feature-section-label { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+
+  .ac-item {
+    display: flex;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+  .ac-item:last-child { border-bottom: none; }
+  .ac-check { color: var(--success); flex-shrink: 0; }
+
+  /* RICE BAR */
+  .rice-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+  }
+  .rice-row:last-child { border-bottom: none; }
+  .rice-name { font-size: 13px; font-weight: 500; width: 200px; flex-shrink: 0; }
+  .rice-bar-wrap { flex: 1; background: var(--surface2); border-radius: 4px; height: 6px; overflow: hidden; }
+  .rice-bar { height: 100%; border-radius: 4px; transition: width .6s ease; }
+  .rice-score { font-size: 12px; font-family: var(--mono); color: var(--accent); width: 50px; text-align: right; flex-shrink: 0; }
+
+  /* ROADMAP */
+  .roadmap-phase {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .roadmap-phase-header {
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .phase-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .phase-info .phase-name { font-size: 15px; font-weight: 600; }
+  .phase-info .phase-period { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+  .roadmap-items { padding: 0 20px 16px; }
+  .roadmap-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    font-size: 13px;
+  }
+  .roadmap-item:last-child { border-bottom: none; }
+  .item-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .status-done { background: var(--success); }
+  .status-progress { background: var(--accent); }
+  .status-planned { background: var(--muted); }
+  .item-name { flex: 1; color: var(--text); }
+  .item-week { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+
+  /* OKR */
+  .okr-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .okr-objective { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--accent); }
+
+  .kr-item {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+  }
+  .kr-item:last-child { border-bottom: none; }
+
+  .kr-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .kr-label { font-size: 13px; color: var(--text); }
+  .kr-nums { font-size: 12px; font-family: var(--mono); color: var(--muted); display: flex; gap: 16px; }
+  .kr-num-item { text-align: right; }
+  .kr-num-label { font-size: 10px; color: var(--muted); }
+  .kr-num-val { font-size: 13px; color: var(--text); }
+
+  .progress-track { background: var(--surface2); border-radius: 3px; height: 5px; }
+  .progress-fill { height: 100%; border-radius: 3px; }
+
+  /* EXPERIMENT */
+  .exp-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .exp-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .exp-title { font-size: 14px; font-weight: 600; }
+  .exp-body { font-size: 13px; color: var(--muted); }
+
+  .exp-row {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .exp-box {
+    background: var(--surface2);
+    border-radius: 6px;
+    padding: 10px 14px;
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .exp-box-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+  .exp-box-val { font-size: 13px; color: var(--text); font-weight: 500; }
+
+  /* RISK */
+  .risk-item {
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    font-size: 13px;
+  }
+  .risk-item:last-child { border-bottom: none; }
+  .risk-main { flex: 1; }
+  .risk-name { font-weight: 500; margin-bottom: 4px; }
+  .risk-mit { color: var(--muted); font-size: 12px; line-height: 1.6; }
+  .risk-badges { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; flex-shrink: 0; width: 100px; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* FUNNEL */
+  .funnel { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 20px 0; }
+  .funnel-step {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+  }
+  .funnel-bar-wrap { flex: 1; display: flex; align-items: center; gap: 10px; }
+  .funnel-bar {
+    height: 36px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+    transition: width .5s ease;
+  }
+  .funnel-label { font-size: 12px; color: var(--muted); width: 80px; text-align: right; flex-shrink: 0; }
+  .funnel-pct { font-size: 13px; font-family: var(--mono); color: var(--text); width: 50px; flex-shrink: 0; }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .main { margin-left: 0; }
+    .page { padding: 24px 20px; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="brand">LearnOS</div>
+    <div class="tagline">PM Case Study 2025</div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Overview</div>
+    <button class="nav-item active" onclick="showPage('overview')">
+      <span class="icon">🏠</span> Overview
+    </button>
+    <button class="nav-item" onclick="showPage('research')">
+      <span class="icon">🔍</span> User Research
+    </button>
+    <button class="nav-item" onclick="showPage('personas')">
+      <span class="icon">👤</span> Personas
+    </button>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Strategy</div>
+    <button class="nav-item" onclick="showPage('prd')">
+      <span class="icon">📋</span> PRD
+    </button>
+    <button class="nav-item" onclick="showPage('rice')">
+      <span class="icon">⚖️</span> RICE Scoring
+    </button>
+    <button class="nav-item" onclick="showPage('roadmap')">
+      <span class="icon">🗓️</span> Roadmap
+    </button>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Execution</div>
+    <button class="nav-item" onclick="showPage('metrics')">
+      <span class="icon">📊</span> Metrics & OKRs
+    </button>
+    <button class="nav-item" onclick="showPage('experiments')">
+      <span class="icon">🧪</span> A/B Tests
+    </button>
+    <button class="nav-item" onclick="showPage('risks')">
+      <span class="icon">⚠️</span> Risks
+    </button>
+  </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+  <div class="topbar">
+    <div class="breadcrumb">
+      LearnOS › <span>Course Completion Engine</span>
+    </div>
+    <div class="topbar-pills">
+      <span class="pill pill-purple">Senior PM</span>
+      <span class="pill pill-blue">v1.4</span>
+      <span class="pill pill-amber">In Progress</span>
+    </div>
+  </div>
+
+  <!-- ═══════ OVERVIEW ═══════ -->
+  <div class="page active" id="page-overview">
+    <div class="page-header">
+      <div class="page-label">Product Case Study</div>
+      <div class="page-title">Reducing Course Dropout Rates</div>
+      <div class="page-subtitle">A FAANG-level PM project: from problem discovery to roadmap execution on an online learning platform with 4.2M registered learners.</div>
+      <div class="page-meta">
+        <span class="meta-item">📅 March 2025</span>
+        <span class="meta-item">🏢 LearnOS Platform</span>
+        <span class="meta-item">🎯 12-month initiative</span>
+        <span class="meta-item">👥 Cross-functional</span>
+      </div>
+    </div>
+
+    <div class="callout">
+      <strong>Problem Statement:</strong> LearnOS has 4.2M registered learners. 88% of enrolled users never complete a course — severely limiting LTV, referral virality, and Pro upgrade rates. Research reveals this is not a content problem. It is a habit formation and accountability failure.
+    </div>
+
+    <div class="section">
+      <div class="section-title">Key Metrics</div>
+      <div class="grid-4">
+        <div class="stat-card">
+          <div class="stat-label">Completion Rate (Now)</div>
+          <div class="stat-value" style="color: var(--danger)">12%</div>
+          <div class="stat-change">Industry avg: 15–18%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Target Completion</div>
+          <div class="stat-value" style="color: var(--success)">35%</div>
+          <div class="stat-change up">↑ +192% improvement</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Revenue Opportunity</div>
+          <div class="stat-value" style="color: var(--accent)">$24M</div>
+          <div class="stat-change neutral">Incremental ARR</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">NPS Target</div>
+          <div class="stat-value" style="color: var(--accent2)">55</div>
+          <div class="stat-change">From baseline of 22</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Drop-off Funnel</div>
+      <div class="funnel">
+        <div class="funnel-step">
+          <div class="funnel-label">Enroll</div>
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar" style="width:100%; background:var(--accent)">4.2M learners</div>
+          </div>
+          <div class="funnel-pct">100%</div>
+        </div>
+        <div class="funnel-step">
+          <div class="funnel-label">Day 1</div>
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar" style="width:82%; background:#6366f1">3.4M active</div>
+          </div>
+          <div class="funnel-pct">82%</div>
+        </div>
+        <div class="funnel-step">
+          <div class="funnel-label">Day 3</div>
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar" style="width:34%; background:#8b5cf6">1.4M active</div>
+          </div>
+          <div class="funnel-pct" style="color:var(--danger)">34%</div>
+        </div>
+        <div class="funnel-step">
+          <div class="funnel-label">Day 7</div>
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar" style="width:18%; background:#a855f7">756K active</div>
+          </div>
+          <div class="funnel-pct" style="color:var(--danger)">18%</div>
+        </div>
+        <div class="funnel-step">
+          <div class="funnel-label">Day 30</div>
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar" style="width:8%; background:#c084fc">336K active</div>
+          </div>
+          <div class="funnel-pct" style="color:var(--danger)">8%</div>
+        </div>
+        <div class="funnel-step">
+          <div class="funnel-label">Complete</div>
+          <div class="funnel-bar-wrap">
+            <div class="funnel-bar" style="width:12%; background:#ef4444">504K done</div>
+          </div>
+          <div class="funnel-pct" style="color:var(--danger)">12%</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Strategic Bets</div>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">🪝 Phase 1 — Hook</div>
+          <div class="card-body">Build the habit loop through streaks, commitment contracts, and smart re-entry. Ship fast and learn from behavior.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">🎯 Phase 2 — Engage</div>
+          <div class="card-body">Personalize the learning path. AI pacing engine, modality switcher, cohort-based learning with social accountability.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">🔄 Phase 3 — Retain</div>
+          <div class="card-body">ML-driven re-engagement, social proof feed, B2B team cohorts, and LMS integrations for scale.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Root Causes (5 Whys)</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Root Cause</th><th>Users Affected</th><th>Solution</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>No accountability structure after Day 1 motivation fades</td><td><span class="pill pill-red">67%</span></td><td>Commitment contracts, cohorts</td></tr>
+            <tr><td>2</td><td>Course pacing too rigid for real-life availability</td><td><span class="pill pill-amber">54%</span></td><td>Adaptive goals, micro-learning</td></tr>
+            <tr><td>3</td><td>No habit-forming trigger after Day 3</td><td><span class="pill pill-amber">48%</span></td><td>Streak system, daily surface</td></tr>
+            <tr><td>4</td><td>Content format mismatch (video vs. text preferences)</td><td><span class="pill pill-blue">39%</span></td><td>Modality switcher</td></tr>
+            <tr><td>5</td><td>Life events interrupt momentum with no recovery path</td><td><span class="pill pill-blue">35%</span></td><td>Smart resume, vacation mode</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ RESEARCH ═══════ -->
+  <div class="page" id="page-research">
+    <div class="page-header">
+      <div class="page-label">User Research Report</div>
+      <div class="page-title">Discovery & Insights</div>
+      <div class="page-subtitle">6-week mixed-methods research sprint across 40 interviews, 1,200 surveys, 15 diary studies, and 2.1M behavioral sessions.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Research Methods</div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🎙️ In-Depth Interviews — n=40</div>
+          <div class="card-body">20 dropouts, 10 completers, 10 churned-paid subscribers. 45–60 min Zoom sessions. Conducted in English, Hindi, Tamil.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">📊 Quantitative Survey — n=1,200</div>
+          <div class="card-body">In-app prompt 30 days post-enrollment for learners under 50% complete. Validated patterns from qualitative phase.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">📓 Diary Studies — n=15, 14 days</div>
+          <div class="card-body">Daily voice memo: "Did I learn today? Why/why not?" Rich context for the Day 1–7 behavioral patterns.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">📡 Behavioral Analysis — 2.1M sessions</div>
+          <div class="card-body">Cohort retention curves, drop-off heatmaps within lessons, enrollment source analysis, device-type breakdowns.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Key Findings</div>
+
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">Finding 1: The Day 3 Cliff is Universal</div>
+        <div class="card-body">The Day 1→Day 3 retention drop (82% → 34%) is the steepest cliff across ALL segments — course type, device, geography, and price tier. It signals a system-level habit failure, not a content problem.</div>
+      </div>
+
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">Finding 2: Learners Have No "Place" for Learning in Their Day</div>
+        <div class="card-body">71% of dropouts have no fixed time for learning. 78% of completers have a fixed ritual (with coffee, during commute, after dinner). The product must help learners build a time slot — not just remind them to return.</div>
+      </div>
+
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">Finding 3: Missing a Day Feels Like Total Failure</div>
+        <div class="card-body">Survey: 44% of learners who stopped said "I lost my momentum / messed up my streak." The product must make recovery emotionally safe. Missing one day must not feel like course failure.</div>
+      </div>
+
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">Finding 4: Social Accountability is Latent Demand</div>
+        <div class="card-body">74% of users said they'd prefer starting a course with a cohort when shown a mock. 51% said they'd feel guilty dropping out if peers watched their progress. We've never offered this.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Finding 5: Completers Behave Differently From Day 1</div>
+        <div class="card-body">Completers: (1) Start within 24h of enrollment, (2) Watch 3+ lessons in first session, (3) Have a re-entry pattern after gaps. Product must accelerate "completer behavior" in new users.</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">What Learners Want (Survey, multi-select)</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature Idea</th><th>% Selected</th><th>Priority Signal</th></tr></thead>
+          <tbody>
+            <tr><td>Bite-sized daily lessons (10–15 min)</td><td>68%</td><td><span class="pill pill-red">Build</span></td></tr>
+            <tr><td>Reminders timed to my schedule</td><td>61%</td><td><span class="pill pill-red">Build</span></td></tr>
+            <tr><td>Learning streak / progress tracker</td><td>57%</td><td><span class="pill pill-red">Build</span></td></tr>
+            <tr><td>A group to learn with</td><td>54%</td><td><span class="pill pill-amber">Build Q2</span></td></tr>
+            <tr><td>Reading/audio alternative to video</td><td>51%</td><td><span class="pill pill-amber">Build Q2</span></td></tr>
+            <tr><td>Certificate with employer value</td><td>48%</td><td><span class="pill pill-blue">Monitor</span></td></tr>
+            <tr><td>Pause course without losing progress</td><td>39%</td><td><span class="pill pill-red">Build</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ PERSONAS ═══════ -->
+  <div class="page" id="page-personas">
+    <div class="page-header">
+      <div class="page-label">User Personas</div>
+      <div class="page-title">Who We're Designing For</div>
+      <div class="page-subtitle">4 distinct learner archetypes identified from research, each with different motivations, barriers, and product needs.</div>
+    </div>
+
+    <div class="grid-2">
+      <div class="persona-card">
+        <div class="persona-avatar" style="background:rgba(79,110,247,.2)">🎨</div>
+        <div class="persona-name">Maya — The Aspirer</div>
+        <div class="persona-role">26, Marketing Coordinator, Bangalore</div>
+        <div class="persona-quote">"I start with so much motivation, but after 3 days work gets in the way and I never come back."</div>
+        <div class="persona-pain"><strong>Pain:</strong> No external accountability. No recovery path after missing days. Enrolls in 3–4 courses, completes 0–1.</div>
+        <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
+          <span class="pill pill-purple">Streaks</span>
+          <span class="pill pill-blue">Cohorts</span>
+          <span class="pill pill-green">Commitment Contract</span>
+        </div>
+      </div>
+
+      <div class="persona-card">
+        <div class="persona-avatar" style="background:rgba(6,182,212,.2)">💻</div>
+        <div class="persona-name">Rajan — The Upgrader</div>
+        <div class="persona-role">35, Software Engineer, Pune</div>
+        <div class="persona-quote">"The course is 40 hours. I don't have 40 hours. I need 20-minute chunks that fit between meetings."</div>
+        <div class="persona-pain"><strong>Pain:</strong> Rigid pacing doesn't match his actual availability. Watches 2hrs on Day 1, then sporadic 5-min clips.</div>
+        <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
+          <span class="pill pill-cyan">Micro-learning</span>
+          <span class="pill pill-blue">AI Pacing</span>
+          <span class="pill pill-amber">Smart Resume</span>
+        </div>
+      </div>
+
+      <div class="persona-card">
+        <div class="persona-avatar" style="background:rgba(16,185,129,.2)">📱</div>
+        <div class="persona-name">Priya — The Student</div>
+        <div class="persona-role">21, Engineering Final Year, Chennai</div>
+        <div class="persona-quote">"I'd rather read the transcript than watch a 15-minute video. But there's no reading option."</div>
+        <div class="persona-pain"><strong>Pain:</strong> Video-only format on mobile commute. Can't always have audio. Skips long videos, prefers reading.</div>
+        <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
+          <span class="pill pill-green">Modality Switcher</span>
+          <span class="pill pill-blue">Transcript Mode</span>
+          <span class="pill pill-purple">Streaks</span>
+        </div>
+      </div>
+
+      <div class="persona-card">
+        <div class="persona-avatar" style="background:rgba(245,158,11,.2)">💼</div>
+        <div class="persona-name">Suresh — The Manager</div>
+        <div class="persona-role">42, VP Engineering, Mumbai</div>
+        <div class="persona-quote">"I need to show my CFO that this investment is working. Nobody shows me who's actually learning."</div>
+        <div class="persona-pain"><strong>Pain:</strong> Buys team accounts but can't track progress. No ROI visibility. Wants manager-level dashboards.</div>
+        <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
+          <span class="pill pill-amber">Team Cohorts</span>
+          <span class="pill pill-red">Manager Dashboard</span>
+          <span class="pill pill-blue">B2B Analytics</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:8px">
+      <div class="section-title">Jobs to be Done</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>When I...</th><th>I want to...</th><th>So I can...</th><th>Feature</th></tr></thead>
+          <tbody>
+            <tr><td>Enroll in a new course</td><td>Feel like completion is achievable</td><td>Start with confidence, not overwhelm</td><td>Commitment contract, cohort</td></tr>
+            <tr><td>Miss a day or week</td><td>Easily pick up where I left off</td><td>Not feel like I've failed</td><td>Smart Resume, vacation mode</td></tr>
+            <tr><td>Learn something hard</td><td>Get just-right difficulty</td><td>Stay in flow, not frustration</td><td>AI Pacing Engine</td></tr>
+            <tr><td>Make progress</td><td>Feel celebrated and seen</td><td>Keep going to the next milestone</td><td>Milestone celebrations</td></tr>
+            <tr><td>Learn with my team</td><td>See peers' progress</td><td>Feel social accountability</td><td>Cohort, social feed</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ PRD ═══════ -->
+  <div class="page" id="page-prd">
+    <div class="page-header">
+      <div class="page-label">Product Requirements Document</div>
+      <div class="page-title">Course Completion Engine</div>
+      <div class="page-subtitle">Full feature specifications for the 5 core features shipping in Phase 1 and Phase 2.</div>
+      <div class="page-meta">
+        <span class="meta-item">📄 v1.4</span>
+        <span class="meta-item pill pill-amber">Engineering Review</span>
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-header">
+        <div class="feature-title">🔥 Feature 1: Learning Streak System</div>
+        <span class="pill pill-red">P0 — RICE: 22.95</span>
+      </div>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:14px">A daily learning streak counter that increments each day a user completes ≥1 lesson. Breaks if user misses a day (1 grace day per 7-day streak).</p>
+      <div class="feature-section">
+        <div class="feature-section-label">Acceptance Criteria</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Streak counter visible on home screen and course player header</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Streak increments when ≥1 lesson completed in a calendar day (user's local timezone)</div>
+        <div class="ac-item"><span class="ac-check">✓</span> "Streak shield" — 1 free grace day per 7-day streak</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Streak breaks trigger specific "restart" flow, not generic notification</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Milestones at 7/30/100 days trigger full-screen celebration</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Offline completions sync on next connection; vacation mode pauses (not breaks) streak</div>
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-header">
+        <div class="feature-title">⚡ Feature 2: Smart Resume Engine</div>
+        <span class="pill pill-red">P0 — RICE: 31.5</span>
+      </div>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:14px">When a user returns after ≥48h away, they land on a personalized "pick up here" screen with context and a one-tap continue button.</p>
+      <div class="feature-section">
+        <div class="feature-section-label">Acceptance Criteria</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Triggers when user re-enters after ≥48 hours away</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Shows: lesson thumbnail, title, timestamp ("You stopped at 4:32"), time to finish</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Motivational context: "You're 68% through Module 3 — almost there!"</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Primary CTA: "Resume Now" | Secondary: "Go to Course Home"</div>
+        <div class="ac-item"><span class="ac-check">✓</span> A/B test: full-screen modal vs. top-of-page banner</div>
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-header">
+        <div class="feature-title">📝 Feature 3: Commitment Contract</div>
+        <span class="pill pill-red">P0 — RICE: 24.0</span>
+      </div>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:14px">At course enrollment, user selects a weekly time commitment and optionally adds an accountability buddy email. System generates a personalized pacing plan.</p>
+      <div class="feature-section">
+        <div class="feature-section-label">Acceptance Criteria</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Commitment step inserted in enrollment flow (after payment, before Course Home)</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Three options: 30 min/wk, 1 hr/wk, 2 hr/wk</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Optional accountability buddy email — double opt-in required</div>
+        <div class="ac-item"><span class="ac-check">✓</span> System shows estimated completion date based on commitment level</div>
+        <div class="ac-item"><span class="ac-check">✓</span> "Commitment check" notification if user falls 2+ weeks behind plan</div>
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-header">
+        <div class="feature-title">🎉 Feature 4: Milestone Celebrations</div>
+        <span class="pill pill-red">P0 — RICE: 54.0</span>
+      </div>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:14px">Full-screen animated celebrations at 25%, 50%, 75%, and 100% course completion with shareable badges for LinkedIn and WhatsApp.</p>
+      <div class="feature-section">
+        <div class="feature-section-label">Acceptance Criteria</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Triggers automatically when user crosses 25/50/75/100% threshold</div>
+        <div class="ac-item"><span class="ac-check">✓</span> 100% celebration includes confetti, certificate preview, and share options</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Shareable PNG card sized for LinkedIn, Twitter, and WhatsApp</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Analytics event fires on each celebration shown and on each share action</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Can be disabled in accessibility settings</div>
+      </div>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-header">
+        <div class="feature-title">👥 Feature 5: Cohort-Based Enrollment</div>
+        <span class="pill pill-amber">P1 — RICE: 7.56</span>
+      </div>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:14px">Users can join a cohort — a group of 10–25 learners starting the same course on the same date, with shared feed and peer accountability.</p>
+      <div class="feature-section">
+        <div class="feature-section-label">Acceptance Criteria</div>
+        <div class="ac-item"><span class="ac-check">✓</span> "Start with a cohort" option on enrollment page alongside "Start at my own pace"</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Cohort sizes: 10–25 learners. Auto-fill; new cohort opens when full</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Shared feed: celebrate milestones, post questions, encourage peers</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Weekly cohort summary email with peer progress highlights</div>
+        <div class="ac-item"><span class="ac-check">✓</span> Cohort feed opt-in only; display name separate from account name</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ RICE ═══════ -->
+  <div class="page" id="page-rice">
+    <div class="page-header">
+      <div class="page-label">Feature Prioritization</div>
+      <div class="page-title">RICE Scoring Framework</div>
+      <div class="page-subtitle">Reach × Impact × Confidence ÷ Effort. Features ranked objectively to determine build order.</div>
+    </div>
+
+    <div class="callout">
+      <strong>Formula:</strong> RICE Score = (Reach × Impact × Confidence%) ÷ Effort (person-weeks). Higher score = ship sooner.
+    </div>
+
+    <div class="section">
+      <div class="section-title">Feature Rankings</div>
+      <div class="card" style="padding:24px">
+        <div id="rice-bars"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Scoring Breakdown</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Feature</th><th>Reach</th><th>Impact</th><th>Confidence</th><th>Effort</th><th>RICE</th><th>Phase</th></tr></thead>
+          <tbody>
+            <tr><td>Milestone Celebrations</td><td>10</td><td>6</td><td>90%</td><td>1</td><td><strong style="color:var(--success)">54.0</strong></td><td><span class="pill pill-red">P0 · Q1</span></td></tr>
+            <tr><td>Smart Resume Engine</td><td>10</td><td>7</td><td>90%</td><td>2</td><td><strong style="color:var(--success)">31.5</strong></td><td><span class="pill pill-red">P0 · Q1</span></td></tr>
+            <tr><td>Commitment Contract</td><td>8</td><td>8</td><td>75%</td><td>2</td><td><strong style="color:var(--accent)">24.0</strong></td><td><span class="pill pill-red">P0 · Q1</span></td></tr>
+            <tr><td>Learning Streak System</td><td>9</td><td>9</td><td>85%</td><td>3</td><td><strong style="color:var(--accent)">22.95</strong></td><td><span class="pill pill-red">P0 · Q1</span></td></tr>
+            <tr><td>Vacation Mode</td><td>6</td><td>5</td><td>85%</td><td>2</td><td>12.75</td><td><span class="pill pill-amber">P1 · Q1</span></td></tr>
+            <tr><td>Accountability Buddy</td><td>7</td><td>7</td><td>75%</td><td>3</td><td>12.25</td><td><span class="pill pill-amber">P1 · Q2</span></td></tr>
+            <tr><td>Cohort Enrollment</td><td>6</td><td>9</td><td>70%</td><td>5</td><td>7.56</td><td><span class="pill pill-amber">P1 · Q2</span></td></tr>
+            <tr><td>Modality Switcher</td><td>7</td><td>7</td><td>65%</td><td>5</td><td>6.37</td><td><span class="pill pill-amber">P1 · Q2</span></td></tr>
+            <tr><td>Daily Lesson Surface</td><td>8</td><td>8</td><td>65%</td><td>7</td><td>5.94</td><td><span class="pill pill-blue">P2 · Q3</span></td></tr>
+            <tr><td>AI Pacing Engine</td><td>8</td><td>9</td><td>60%</td><td>8</td><td>5.40</td><td><span class="pill pill-blue">P2 · Q3</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ ROADMAP ═══════ -->
+  <div class="page" id="page-roadmap">
+    <div class="page-header">
+      <div class="page-label">Product Roadmap</div>
+      <div class="page-title">12-Month Execution Plan</div>
+      <div class="page-subtitle">Three phases over FY2025: Hook → Engage → Retain + Scale. Each phase unlocks learning data for the next.</div>
+    </div>
+
+    <div class="roadmap-phase">
+      <div class="roadmap-phase-header" style="background:rgba(79,110,247,.1); border-bottom:1px solid var(--border)">
+        <div class="phase-num" style="background:rgba(79,110,247,.3); color:var(--accent)">1</div>
+        <div class="phase-info">
+          <div class="phase-name">HOOK — Build the Habit Loop</div>
+          <div class="phase-period">Q1 2025 · January → March · Target: D7 retention 26%</div>
+        </div>
+        <span class="pill pill-blue" style="margin-left:auto">In Progress</span>
+      </div>
+      <div class="roadmap-items">
+        <div class="roadmap-item"><div class="item-status status-progress"></div><div class="item-name">Milestone Celebrations (25/50/75/100%)</div><span class="pill pill-red">P0</span><div class="item-week">Week 4</div></div>
+        <div class="roadmap-item"><div class="item-status status-progress"></div><div class="item-name">Smart Resume Engine</div><span class="pill pill-red">P0</span><div class="item-week">Week 5</div></div>
+        <div class="roadmap-item"><div class="item-status status-planned"></div><div class="item-name">Commitment Contract at Enrollment</div><span class="pill pill-red">P0</span><div class="item-week">Week 6</div></div>
+        <div class="roadmap-item"><div class="item-status status-planned"></div><div class="item-name">Vacation Mode</div><span class="pill pill-amber">P1</span><div class="item-week">Week 7</div></div>
+        <div class="roadmap-item"><div class="item-status status-planned"></div><div class="item-name">Learning Streak System (new microservice)</div><span class="pill pill-red">P0</span><div class="item-week">Week 10</div></div>
+        <div class="roadmap-item"><div class="item-status status-planned"></div><div class="item-name">Streak Milestone Notifications</div><span class="pill pill-amber">P1</span><div class="item-week">Week 11</div></div>
+      </div>
+    </div>
+
+    <div class="roadmap-phase">
+      <div class="roadmap-phase-header" style="background:rgba(124,58,237,.1); border-bottom:1px solid var(--border)">
+        <div class="phase-num" style="background:rgba(124,58,237,.3); color:var(--accent2)">2</div>
+        <div class="phase-info">
+          <div class="phase-name">ENGAGE — Personalize the Path</div>
+          <div class="phase-period">Q2 2025 · April → June · Target: Completion rate 25%</div>
+        </div>
+        <span class="pill pill-purple">Planned</span>
+      </div>
+      <div class="roadmap-items">
+        <div class="roadmap-item"><div class="item-status status-planned"></div><div class="item-name">Content Modality Switcher (video ↔ text ↔ audio)</div><span class="pill pill-amber">P1</span><div class="item-week">Week 14</div></div>
+        <div class="roadmap-item"><div class="item-status status-planned"></div><div class="item-name">Adaptive Daily Goal Setting</div><span class="pill pill-amber">P1</span><div class="item-week">Week 14</div></div>
+        <div class="roadmap-item"><div class="item-status status-planned"></div><div class="item-name">Cohort Enrollment Beta (5 pilot courses)</div><span class="pill pill-amber">P1</span><div class="item-week">Week 16</div></div>
+        <div class="roadmap-item"><div class="item-status status-planned"></div><div class="item-name">Daily "Pick Up Here" Home Surface</div><span class="pill pill-blue">P2</span><div class="item-week">Week 17</div></div>
+        <div class="roadmap-item"><div class="item-status status-planned"></div><div class="item-name">Accountability Buddy Feature</div><span class="pill pill-amber">P1</span><div class="item-week">Week 18</div></div>
+        <div class="roadmap-item"><div class="item-status status-planned"></div><div class="item-name">Cohort Peer Feed (with Trust & Safety tooling)</div><span class="pill pill-amber">P1</span><div class="item-week">Week 20</div></div>
+      </div>
+    </div>
+
+    <div class="roadmap-phase">
+      <div class="roadmap-phase-header" style="background:rgba(16,185,129,.1); border-bottom:1px solid var(--border)">
+        <div class="phase-num" style="background:rgba(16,185,129,.3); color:var(--success)">3</div>
+        <div class="phase-info">
+          <div class="phase-name">RETAIN + SCALE — Intelligence & Network</div>
+          <div class="phase-period">Q3–Q4 2025 · July → December · Target: Completion 35%, WCC 22K/week</div>
+        </div>
+        <span class="pill pill-green">Future</span>
+      </div>
+      <div class="roadmap-items">
+        <div class="roadmap-item"><div class="item-status status-planned"></div><div class="item-name">AI Pacing Engine (ML model v1)</div><span class="pill pill-blue">P2</span><div class="item-week">Week 26</div></div>
+        <div class="roadmap-item"><div class="item-status status-planned"></div><div class="item-name">ML-Driven Re-engagement Notifications</div><span class="pill pill-blue">P2</span><div class="item-week">Week 28</div></div>
+        <div class="roadmap-item"><div class="item-status status-planned"></div><div class="item-name">B2B Team Cohorts + Manager Dashboard</div><span class="pill pill-blue">P2</span><div class="item-week">Week 30</div></div>
+        <div class="roadmap-item"><div class="item-status status-planned"></div><div class="item-name">Social Proof Feed ("X peers finished Module 3")</div><span class="pill pill-blue">P2</span><div class="item-week">Week 32</div></div>
+        <div class="roadmap-item"><div class="item-status status-planned"></div><div class="item-name">Corporate LMS API Integration</div><span class="pill pill-blue">P2</span><div class="item-week">Week 40</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ METRICS ═══════ -->
+  <div class="page" id="page-metrics">
+    <div class="page-header">
+      <div class="page-label">Metrics & OKR Framework</div>
+      <div class="page-title">How We Measure Success</div>
+      <div class="page-subtitle">North star, OKRs, leading/lagging indicators, and guardrail metrics across a 12-month horizon.</div>
+    </div>
+
+    <div class="callout success">
+      <strong>North Star Metric:</strong> Weekly Courses Completed (WCC) — courses marked 100% complete by unique learners per week. Current: 4,200 WCC/wk → Target: 22,000 WCC/wk (+424%)
+    </div>
+
+    <div class="section">
+      <div class="section-title">OKR Dashboard</div>
+
+      <div class="okr-card">
+        <div class="okr-objective">Objective 1: Make LearnOS the platform where learners actually finish</div>
+
+        <div class="kr-item">
+          <div class="kr-top">
+            <div class="kr-label">KR1.1 — Course completion rate</div>
+            <div class="kr-nums">
+              <div class="kr-num-item"><div class="kr-num-label">Baseline</div><div class="kr-num-val">12%</div></div>
+              <div class="kr-num-item"><div class="kr-num-label">Q1</div><div class="kr-num-val">18%</div></div>
+              <div class="kr-num-item"><div class="kr-num-label">Target</div><div class="kr-num-val" style="color:var(--success)">35%</div></div>
+            </div>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:20%; background:var(--accent)"></div></div>
+        </div>
+
+        <div class="kr-item">
+          <div class="kr-top">
+            <div class="kr-label">KR1.2 — Learners with active 7-day streak</div>
+            <div class="kr-nums">
+              <div class="kr-num-item"><div class="kr-num-label">Baseline</div><div class="kr-num-val">0</div></div>
+              <div class="kr-num-item"><div class="kr-num-label">Q2</div><div class="kr-num-val">200K</div></div>
+              <div class="kr-num-item"><div class="kr-num-label">Target</div><div class="kr-num-val" style="color:var(--success)">500K</div></div>
+            </div>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:5%; background:var(--accent2)"></div></div>
+        </div>
+
+        <div class="kr-item">
+          <div class="kr-top">
+            <div class="kr-label">KR1.3 — Cohort enrollment rate</div>
+            <div class="kr-nums">
+              <div class="kr-num-item"><div class="kr-num-label">Baseline</div><div class="kr-num-val">0%</div></div>
+              <div class="kr-num-item"><div class="kr-num-label">Q2</div><div class="kr-num-val">15%</div></div>
+              <div class="kr-num-item"><div class="kr-num-label">Target</div><div class="kr-num-val" style="color:var(--success)">30%</div></div>
+            </div>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:5%; background:var(--accent3)"></div></div>
+        </div>
+      </div>
+
+      <div class="okr-card">
+        <div class="okr-objective">Objective 2: Build a habit-forming learning experience</div>
+
+        <div class="kr-item">
+          <div class="kr-top">
+            <div class="kr-label">KR2.1 — Day-7 learner retention</div>
+            <div class="kr-nums">
+              <div class="kr-num-item"><div class="kr-num-label">Baseline</div><div class="kr-num-val">18%</div></div>
+              <div class="kr-num-item"><div class="kr-num-label">Q1</div><div class="kr-num-val">26%</div></div>
+              <div class="kr-num-item"><div class="kr-num-label">Target</div><div class="kr-num-val" style="color:var(--success)">42%</div></div>
+            </div>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:15%; background:var(--success)"></div></div>
+        </div>
+
+        <div class="kr-item">
+          <div class="kr-top">
+            <div class="kr-label">KR2.3 — Avg sessions per learner per week</div>
+            <div class="kr-nums">
+              <div class="kr-num-item"><div class="kr-num-label">Baseline</div><div class="kr-num-val">1.2</div></div>
+              <div class="kr-num-item"><div class="kr-num-label">Q2</div><div class="kr-num-val">2.5</div></div>
+              <div class="kr-num-item"><div class="kr-num-label">Target</div><div class="kr-num-val" style="color:var(--success)">3.8</div></div>
+            </div>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:5%; background:var(--warn)"></div></div>
+        </div>
+      </div>
+
+      <div class="okr-card">
+        <div class="okr-objective">Objective 3: Convert learning value into revenue</div>
+
+        <div class="kr-item">
+          <div class="kr-top">
+            <div class="kr-label">KR3.1 — Trial to Paid conversion rate</div>
+            <div class="kr-nums">
+              <div class="kr-num-item"><div class="kr-num-label">Baseline</div><div class="kr-num-val">6%</div></div>
+              <div class="kr-num-item"><div class="kr-num-label">Q2</div><div class="kr-num-val">11%</div></div>
+              <div class="kr-num-item"><div class="kr-num-label">Target</div><div class="kr-num-val" style="color:var(--success)">14%</div></div>
+            </div>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:10%; background:var(--accent)"></div></div>
+        </div>
+
+        <div class="kr-item">
+          <div class="kr-top">
+            <div class="kr-label">KR3.4 — NPS Score</div>
+            <div class="kr-nums">
+              <div class="kr-num-item"><div class="kr-num-label">Baseline</div><div class="kr-num-val">22</div></div>
+              <div class="kr-num-item"><div class="kr-num-label">Q2</div><div class="kr-num-val">40</div></div>
+              <div class="kr-num-item"><div class="kr-num-label">Target</div><div class="kr-num-val" style="color:var(--success)">55</div></div>
+            </div>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:5%; background:var(--accent2)"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Guardrail Metrics</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Guardrail</th><th>Threshold</th><th>Why It Matters</th></tr></thead>
+          <tbody>
+            <tr><td>Enrollment completion rate</td><td>Must not drop &gt; 5%</td><td>New features must not add friction to starting a course</td></tr>
+            <tr><td>Instructor earnings</td><td>Must not drop &gt; 3%</td><td>Creator economy health — we serve instructors too</td></tr>
+            <tr><td>Support ticket volume</td><td>Must not increase &gt; 10%</td><td>Signals user confusion or product bugs</td></tr>
+            <tr><td>Notification opt-out rate</td><td>Must not exceed 25%</td><td>Signals we're being too pushy — damages trust</td></tr>
+            <tr><td>App store rating</td><td>Must stay ≥ 4.3 stars</td><td>Brand signal and top-of-funnel acquisition impact</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ EXPERIMENTS ═══════ -->
+  <div class="page" id="page-experiments">
+    <div class="page-header">
+      <div class="page-label">Experiment Design</div>
+      <div class="page-title">A/B Testing Plan</div>
+      <div class="page-subtitle">6 experiments designed to validate hypotheses before full rollout. All at 95% confidence, 80% statistical power.</div>
+    </div>
+
+    <div class="exp-card">
+      <div class="exp-header">
+        <div>
+          <div class="exp-title">Experiment 1: Streak Counter Placement</div>
+          <div class="exp-body" style="margin-top:4px">Does showing the streak in the course player increase D7 retention vs. home-only?</div>
+        </div>
+        <span class="pill pill-red">Running Week 4–8</span>
+      </div>
+      <div class="exp-row">
+        <div class="exp-box"><div class="exp-box-label">Hypothesis</div><div class="exp-box-val">Streak in course player → +10pp D7 retention</div></div>
+        <div class="exp-box"><div class="exp-box-label">Sample</div><div class="exp-box-val">50K users per variant (3 arms)</div></div>
+        <div class="exp-box"><div class="exp-box-label">Duration</div><div class="exp-box-val">4 weeks</div></div>
+        <div class="exp-box"><div class="exp-box-label">Primary Metric</div><div class="exp-box-val">D7 retention</div></div>
+      </div>
+    </div>
+
+    <div class="exp-card">
+      <div class="exp-header">
+        <div>
+          <div class="exp-title">Experiment 2: Commitment Contract</div>
+          <div class="exp-body" style="margin-top:4px">Does adding a commitment step post-enrollment improve D30 retention without killing the enrollment funnel?</div>
+        </div>
+        <span class="pill pill-amber">Running Week 5–10</span>
+      </div>
+      <div class="exp-row">
+        <div class="exp-box"><div class="exp-box-label">Hypothesis</div><div class="exp-box-val">Commitment step → +8pp D30 retention</div></div>
+        <div class="exp-box"><div class="exp-box-label">Sample</div><div class="exp-box-val">30K users per arm (50/50 split)</div></div>
+        <div class="exp-box"><div class="exp-box-label">Guardrail</div><div class="exp-box-val">Enrollment funnel must not drop &gt;5%</div></div>
+        <div class="exp-box"><div class="exp-box-label">Duration</div><div class="exp-box-val">6 weeks</div></div>
+      </div>
+    </div>
+
+    <div class="exp-card">
+      <div class="exp-header">
+        <div>
+          <div class="exp-title">Experiment 3: Smart Resume Trigger Threshold</div>
+          <div class="exp-body" style="margin-top:4px">Is 48h or 72h the optimal gap to trigger the Smart Resume experience?</div>
+        </div>
+        <span class="pill pill-blue">Running Week 8–11</span>
+      </div>
+      <div class="exp-row">
+        <div class="exp-box"><div class="exp-box-label">Control</div><div class="exp-box-val">72h gap trigger</div></div>
+        <div class="exp-box"><div class="exp-box-label">Variant</div><div class="exp-box-val">48h gap trigger</div></div>
+        <div class="exp-box"><div class="exp-box-label">Primary Metric</div><div class="exp-box-val">Re-activation rate within 24h</div></div>
+        <div class="exp-box"><div class="exp-box-label">Guardrail</div><div class="exp-box-val">Notification opt-out rate</div></div>
+      </div>
+    </div>
+
+    <div class="exp-card">
+      <div class="exp-header">
+        <div>
+          <div class="exp-title">Experiment 4: Cohort vs. Solo Completion</div>
+          <div class="exp-body" style="margin-top:4px">Do cohort learners complete at 2x the rate of self-paced learners in the same course?</div>
+        </div>
+        <span class="pill pill-purple">Planned Week 16–22</span>
+      </div>
+      <div class="exp-row">
+        <div class="exp-box"><div class="exp-box-label">Design</div><div class="exp-box-val">Quasi-experiment: cohort vs. solo in same course</div></div>
+        <div class="exp-box"><div class="exp-box-label">Primary Metric</div><div class="exp-box-val">90-day completion rate</div></div>
+        <div class="exp-box"><div class="exp-box-label">Secondary</div><div class="exp-box-val">NPS at completion, Pro upgrade rate</div></div>
+        <div class="exp-box"><div class="exp-box-label">Duration</div><div class="exp-box-val">90 days (one full cohort cycle)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ RISKS ═══════ -->
+  <div class="page" id="page-risks">
+    <div class="page-header">
+      <div class="page-label">Risk Assessment</div>
+      <div class="page-title">Risks & Mitigations</div>
+      <div class="page-subtitle">Identified risks with probability, impact ratings, and specific mitigation strategies for each.</div>
+    </div>
+
+    <div class="card">
+      <div class="risk-item">
+        <div class="risk-main">
+          <div class="risk-name">Streaks cause anxiety or shame in professional learners</div>
+          <div class="risk-mit">Tone testing for all UX copy before launch. Vacation mode bypass available. Full opt-out offered in settings. "Restart" flow is warm and encouraging, not punishing.</div>
+        </div>
+        <div class="risk-badges">
+          <span class="pill pill-amber">Medium Prob</span>
+          <span class="pill pill-red">High Impact</span>
+        </div>
+      </div>
+
+      <div class="risk-item">
+        <div class="risk-main">
+          <div class="risk-name">Commitment contract step slows enrollment funnel</div>
+          <div class="risk-mit">A/B tested with control before full rollout. Guardrail: enrollment completion rate monitored daily. Rollback in &lt;2 hours if enrollment drops &gt;5% in 48h window.</div>
+        </div>
+        <div class="risk-badges">
+          <span class="pill pill-amber">Medium Prob</span>
+          <span class="pill pill-red">High Impact</span>
+        </div>
+      </div>
+
+      <div class="risk-item">
+        <div class="risk-main">
+          <div class="risk-name">Accountability buddy emails feel spammy to recipients</div>
+          <div class="risk-mit">Double opt-in required before buddy's email is stored. Clear sender address (hi@learnos.com). Easy one-click unsubscribe. SPF/DKIM properly configured.</div>
+        </div>
+        <div class="risk-badges">
+          <span class="pill pill-blue">Low Prob</span>
+          <span class="pill pill-amber">Med Impact</span>
+        </div>
+      </div>
+
+      <div class="risk-item">
+        <div class="risk-main">
+          <div class="risk-name">Streak data lost due to Redis service outage</div>
+          <div class="risk-mit">Redis cluster with multi-AZ replication. Manual recovery procedure in runbook. SLA: recover streak data within 4 hours of incident. Communication template ready for users affected.</div>
+        </div>
+        <div class="risk-badges">
+          <span class="pill pill-blue">Low Prob</span>
+          <span class="pill pill-red">High Impact</span>
+        </div>
+      </div>
+
+      <div class="risk-item">
+        <div class="risk-main">
+          <div class="risk-name">Cohort communities become negative or toxic</div>
+          <div class="risk-mit">Community guidelines displayed at cohort join. Report + mute tools available from Day 1. Moderation queue staffed. Trust & Safety review required before cohort goes to &gt;10% traffic.</div>
+        </div>
+        <div class="risk-badges">
+          <span class="pill pill-blue">Low Prob</span>
+          <span class="pill pill-red">High Impact</span>
+        </div>
+      </div>
+
+      <div class="risk-item">
+        <div class="risk-main">
+          <div class="risk-name">AI Pacing Engine model performs poorly on edge-case learner types</div>
+          <div class="risk-mit">Human-in-the-loop fallback for all model recommendations. Model confidence threshold: only serve recommendation if P &gt; 70%. Monitor model performance weekly with DS team. Users can override pacing plan at any time.</div>
+        </div>
+        <div class="risk-badges">
+          <span class="pill pill-amber">Medium Prob</span>
+          <span class="pill pill-amber">Med Impact</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:28px">
+      <div class="section-title">Competitive Benchmarks</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Platform</th><th>Est. Completion</th><th>DAU/MAU</th><th>Primary Retention Mechanic</th></tr></thead>
+          <tbody>
+            <tr><td>Duolingo</td><td>40%+ (active)</td><td>74%</td><td>Streaks, leagues, hearts</td></tr>
+            <tr><td>Brilliant.org</td><td>35%</td><td>42%</td><td>Daily puzzles, flow state</td></tr>
+            <tr><td>Coursera (cert)</td><td>30%</td><td>28%</td><td>Deadlines, peer assignments</td></tr>
+            <tr><td>MasterClass</td><td>22%</td><td>35%</td><td>Cinematic content quality</td></tr>
+            <tr><td>LinkedIn Learning</td><td>14%</td><td>22%</td><td>Career integration, B2B</td></tr>
+            <tr><td>Udemy</td><td>6–10%</td><td>15%</td><td>Price anchoring only</td></tr>
+            <tr><td><strong>LearnOS (now)</strong></td><td><strong style="color:var(--danger)">12%</strong></td><td>12%</td><td>Email campaigns only</td></tr>
+            <tr><td><strong>LearnOS (target)</strong></td><td><strong style="color:var(--success)">35%</strong></td><td>40%+</td><td>Streaks + cohorts + AI pacing</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end main -->
+
+<script>
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// Build RICE bars
+const riceData = [
+  { name: 'Milestone Celebrations', score: 54.0, color: '#10b981' },
+  { name: 'Smart Resume Engine', score: 31.5, color: '#10b981' },
+  { name: 'Commitment Contract', score: 24.0, color: '#4f6ef7' },
+  { name: 'Learning Streak System', score: 22.95, color: '#4f6ef7' },
+  { name: 'Vacation Mode', score: 12.75, color: '#8888a8' },
+  { name: 'Accountability Buddy', score: 12.25, color: '#8888a8' },
+  { name: 'Cohort Enrollment', score: 7.56, color: '#8888a8' },
+  { name: 'Modality Switcher', score: 6.37, color: '#8888a8' },
+  { name: 'Daily Lesson Surface', score: 5.94, color: '#6b7280' },
+  { name: 'AI Pacing Engine', score: 5.40, color: '#6b7280' },
+];
+const maxScore = riceData[0].score;
+const barsEl = document.getElementById('rice-bars');
+riceData.forEach(r => {
+  const row = document.createElement('div');
+  row.className = 'rice-row';
+  row.innerHTML = `
+    <div class="rice-name">${r.name}</div>
+    <div class="rice-bar-wrap">
+      <div class="rice-bar" style="width:${(r.score/maxScore*100).toFixed(1)}%; background:${r.color}"></div>
+    </div>
+    <div class="rice-score">${r.score}</div>
+  `;
+  barsEl.appendChild(row);
+});
+</script>
+</body>
+</html>
